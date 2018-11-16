@@ -1,4 +1,19 @@
 groups:
+
+- name: bootstrap-terraform-state
+  jobs:
+  serial_groups: [terraform]
+  plan:
+  - get: pcf-pipelines
+  - task: create-terraform-state
+    params:
+      S3_BUCKET_TERRAFORM: {{S3_OUTPUT_BUCKET}}
+      S3_ENDPOINT: {{S3_ENDPOINT}}
+      S3_REGION: {{aws_region}}
+      AWS_ACCESS_KEY_ID: {{aws_access_key_id}}
+      AWS_SECRET_ACCESS_KEY: {{aws_secret_access_key}}
+    file: pcf-pipelines/tasks/create-initial-terraform-state/task.yml
+
 - name: deploy
   jobs:
   - upload-opsman-image

@@ -9,6 +9,10 @@ function get_opsman_version() {
 }
 
 function main() {
+
+  mkdir -p terraform-state/
+  mv terraform-state/* create-infrastructure-output/
+
   local opsman_image_name="ops-manager-$(get_opsman_version)"
   local opsman_fixed_ip=$(echo $INFRA_SUBNET_CIDR|cut -d. -f 1,2,3).5
   echo "Opsman Image: ${opsman_image_name}"
@@ -39,7 +43,7 @@ function main() {
     -var "opsman_volume_size=${OPSMAN_VOLUME_SIZE}" \
     -var "opsman_flavor=${OPSMAN_FLAVOR}" \
     -out "terraform.tfplan" \
-    -state "terraform-state/terraform.tfstate" \
+    -state "$ROOT/create-infrastructure-output/terraform.tfstate" \
     "$ROOT/pcf-pipelines/install-pcf/openstack/terraform"
 
   terraform apply \
@@ -48,10 +52,10 @@ function main() {
     terraform.tfplan
 
   local haproxy_floating_ip=$(terraform output \
-    -state "create-infrastructure-output/terraform.tfstate" \
+    -state "$ROOT/create-infrastructure-output/terraform.tfstate" \
     haproxy_floating_ip)
   local opsman_floating_ip=$(terraform output \
-    -state "create-infrastructure-output/terraform.tfstate" \
+    -state "$ROOT/create-infrastructure-output/terraform.tfstatee" \
     opsman_floating_ip)
 
   echo "=========== Floating IPs ==========="

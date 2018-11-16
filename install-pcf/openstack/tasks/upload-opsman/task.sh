@@ -21,7 +21,7 @@ fi
 
 echo "Installing: $IMG_NAME"
 openstack image create \
-  --disk-format qcow2 \
+  --disk-format RAW \
   --container-format bare \
   --private \
   --file $OPSMAN_FILE \
