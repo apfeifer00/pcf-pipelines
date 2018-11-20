@@ -4,12 +4,13 @@ set -eu
 
 ROOT=$PWD
 
-function finish {
-  t=$?
-  cp  $ROOT/terraform.tfstate $ROOT/create-infrastructure-output/terraform.tfstate
-  exit "$t"
-}
-trap finish EXIT
+### try to fix aws upload 2. 
+#function finish {
+#  t=$?
+#  cp  $ROOT/terraform.tfstate $ROOT/create-infrastructure-output/terraform.tfstate
+#  exit "$t"
+#}
+# trap finish EXIT
 
 function get_opsman_version() {
   cut -d\# -f 1 ops-manager/version
@@ -57,8 +58,9 @@ function main() {
     -state-out "$ROOT/create-infrastructure-output/terraform.tfstate" \
     -parallelism=5 \
     terraform.tfplan
-    
-  aws s3 --endpoint-url $S3_ENDPOINT --region $S3_REGION cp terraform.tfstate "s3://${S3_BUCKET_TERRAFORM}/terraform.tfstate"
+ 
+ ### try to fix aws upload 1.
+#  aws s3 --endpoint-url $S3_ENDPOINT --region $S3_REGION cp terraform.tfstate "s3://${S3_BUCKET_TERRAFORM}/terraform.tfstate"
 
   local haproxy_floating_ip=$(terraform output \
     -state "$ROOT/create-infrastructure-output/terraform.tfstate" \
