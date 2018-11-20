@@ -4,6 +4,13 @@ set -eu
 
 ROOT=$PWD
 
+function finish {
+  t=$?
+  cp  $ROOT/terraform.tfstate $ROOT/create-infrastructure-output/terraform.tfstate
+  exit "$t"
+}
+trap finish EXIT
+
 function get_opsman_version() {
   cut -d\# -f 1 ops-manager/version
 }
