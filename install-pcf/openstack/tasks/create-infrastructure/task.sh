@@ -50,6 +50,8 @@ function main() {
     -state-out "$ROOT/create-infrastructure-output/terraform.tfstate" \
     -parallelism=5 \
     terraform.tfplan
+    
+  aws s3 --endpoint-url $S3_ENDPOINT --region $S3_REGION cp terraform.tfstate "s3://${S3_BUCKET_TERRAFORM}/terraform.tfstate"
 
   local haproxy_floating_ip=$(terraform output \
     -state "$ROOT/create-infrastructure-output/terraform.tfstate" \
