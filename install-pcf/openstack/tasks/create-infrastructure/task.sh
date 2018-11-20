@@ -66,7 +66,7 @@ function main() {
     -state "$ROOT/create-infrastructure-output/terraform.tfstate" \
     haproxy_floating_ip)
   local opsman_floating_ip=$(terraform output \
-    -state "$ROOT/create-infrastructure-output/terraform.tfstatee" \
+    -state "$ROOT/create-infrastructure-output/terraform.tfstate" \
     opsman_floating_ip)
 
   echo "=========== Floating IPs ==========="
