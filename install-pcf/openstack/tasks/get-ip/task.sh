@@ -14,5 +14,5 @@ ROOT=$PWD
   echo "=========== Floating IPs ==========="
   echo "OpsMan: ${opsman_floating_ip}"
   echo "HA Proxy: ${haproxy_floating_ip}"
-  echo "${opsman_floating_ip}" > $ROOT/ip-adresses/haproxy_floating_ip
+  echo "${opsman_floating_ip}" > $ROOT/ip-adresses/opsman_floating_ip
   echo "${haproxy_floating_ip}" > $ROOT/ip-adresses/haproxy_ip
