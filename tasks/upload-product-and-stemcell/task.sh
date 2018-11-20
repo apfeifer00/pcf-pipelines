@@ -1,93 +1,63 @@
+
 #!/bin/bash
 
 set -eu
 
-if [[ -n "$NO_PROXY" ]]; then
-  echo "$OM_IP $OPSMAN_DOMAIN_OR_IP_ADDRESS" >> /etc/hosts
-fi
+ROOT=$PWD
 
-STEMCELL_VERSION=$(
-  cat ./pivnet-product/metadata.json |
-  jq --raw-output \
-    '
-    [
-      (.Dependencies // [])[]
-      | select(.Release.Product.Name | contains("Stemcells"))
-      | .Release.Version
-    ]
-    | map(split(".") | map(tonumber))
-    | transpose | transpose
-    | max // empty
-    | map(tostring)
-    | join(".")
-    '
-)
+function get_opsman_version() {
+  cut -d\# -f 1 ops-manager/version
+}
 
-if [ -n "$STEMCELL_VERSION" ]; then
-  diagnostic_report=$(
-    om-linux \
-      --target https://$OPSMAN_DOMAIN_OR_IP_ADDRESS \
-      --client-id "${OPSMAN_CLIENT_ID}" \
-      --client-secret "${OPSMAN_CLIENT_SECRET}" \
-      --username "$OPS_MGR_USR" \
-      --password "$OPS_MGR_PWD" \
-      --skip-ssl-validation \
-      curl --silent --path "/api/v0/diagnostic_report"
-  )
+function main() {
+  local opsman_image_name="ops-manager-$(get_opsman_version)"
+  local opsman_fixed_ip=$(echo $INFRA_SUBNET_CIDR|cut -d. -f 1,2,3).5
+  echo "Opsman Image: ${opsman_image_name}"
 
-  stemcell=$(
-    echo $diagnostic_report |
-    jq \
-      --arg version "$STEMCELL_VERSION" \
-      --arg glob "$IAAS" \
-    '.stemcells[] | select(contains($version) and contains($glob))'
-  )
+  terraform init "$ROOT/pcf-pipelines/install-pcf/openstack/terraform"
 
-  if [[ -z "$stemcell" ]]; then
-    echo "Downloading stemcell $STEMCELL_VERSION"
+  terraform plan \
+    -var "os_tenant_name=${OS_PROJECT_NAME}" \
+    -var "os_username=${OS_USERNAME}" \
+    -var "os_password=${OS_PASSWORD}" \
+    -var "os_auth_url=${OS_AUTH_URL}" \
+    -var "os_region=${OS_REGION_NAME}" \
+    -var "os_domain_name=${OS_USER_DOMAIN_NAME}" \
+    -var "prefix=${OS_RESOURCE_PREFIX}" \
+    -var "infra_subnet_cidr=${INFRA_SUBNET_CIDR}" \
+    -var "opsman_fixed_ip"=${opsman_fixed_ip} \
+    -var "ert_subnet_cidr=${ERT_SUBNET_CIDR}" \
+    -var "services_subnet_cidr=${SERVICES_SUBNET_CIDR}" \
+    -var "dynamic_services_subnet_cidr=${DYNAMIC_SERVICES_SUBNET_CIDR}" \
+    -var "infra_dns=${INFRA_DNS}" \
+    -var "ert_dns=${ERT_DNS}" \
+    -var "services_dns=${SERVICES_DNS}" \
+    -var "dynamic_services_dns=${DYNAMIC_SERVICES_DNS}" \
+    -var "external_network=${EXTERNAL_NETWORK}" \
+    -var "external_network_id=${EXTERNAL_NETWORK_ID}" \
+    -var "opsman_image_name=${opsman_image_name}" \
+    -var "opsman_public_key=${OPSMAN_PUBLIC_KEY}" \
+    -var "opsman_volume_size=${OPSMAN_VOLUME_SIZE}" \
+    -var "opsman_flavor=${OPSMAN_FLAVOR}" \
+    -out "terraform.tfplan" \
+    -state "terraform-state/terraform.tfstate" \
+    "$ROOT/pcf-pipelines/install-pcf/openstack/terraform"
 
-    product_slug=$(
-      jq --raw-output \
-        '
-        if any(.Dependencies[]; select(.Release.Product.Name | contains("Stemcells for PCF (Windows)"))) then
-          "stemcells-windows-server"
-        elif any(.Dependencies[]; select(.Release.Product.Name | contains("Stemcells for PCF (Ubuntu Xenial)"))) then
-          "stemcells-ubuntu-xenial"
-        else
-          "stemcells"
-        end
-        ' < pivnet-product/metadata.json
-    )
+  terraform apply \
+    -state-out "$ROOT/create-infrastructure-output/terraform.tfstate" \
+    -parallelism=5 \
+    terraform.tfplan
 
-    pivnet-cli login --api-token="$PIVNET_API_TOKEN"
-    pivnet-cli download-product-files -p "$product_slug" -r $STEMCELL_VERSION -g "*${IAAS}*" --accept-eula
+  local haproxy_floating_ip=$(terraform output \
+    -state "create-infrastructure-output/terraform.tfstate" \
+    haproxy_floating_ip)
+  local opsman_floating_ip=$(terraform output \
+    -state "create-infrastructure-output/terraform.tfstate" \
+    opsman_floating_ip)
 
-    SC_FILE_PATH=`find ./ -name *.tgz`
+  echo "=========== Floating IPs ==========="
+  echo "OpsMan: ${opsman_floating_ip}"
+  echo "HA Proxy: ${haproxy_floating_ip}"
+}
 
-    if [ ! -f "$SC_FILE_PATH" ]; then
-      echo "Stemcell file not found!"
-      exit 1
-    fi
-
-    om-linux -t https://$OPSMAN_DOMAIN_OR_IP_ADDRESS \
-      --client-id "${OPSMAN_CLIENT_ID}" \
-      --client-secret "${OPSMAN_CLIENT_SECRET}" \
-      -u "$OPS_MGR_USR" \
-      -p "$OPS_MGR_PWD" \
-      -k \
-      upload-stemcell \
-      -s $SC_FILE_PATH
-  fi
-fi
-
-# Should the slug contain more than one product, pick only the first.
-FILE_PATH=`find ./pivnet-product -name *.pivotal | sort | head -1`
-om-linux -t https://$OPSMAN_DOMAIN_OR_IP_ADDRESS \
-  --client-id "${OPSMAN_CLIENT_ID}" \
-  --client-secret "${OPSMAN_CLIENT_SECRET}" \
-  -u "$OPS_MGR_USR" \
-  -p "$OPS_MGR_PWD" \
-  -k \
-  --request-timeout 3600 \
-  upload-product \
-  -p $FILE_PATH
+main
