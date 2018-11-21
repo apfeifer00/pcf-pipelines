@@ -18,8 +18,8 @@ function get_opsman_version() {
 
 function main() {
 
-  mkdir -p terraform-state/
-  [  -z “$(ls -A  terraform-state/)” ] && mv terraform-state/* create-infrastructure-output/ || echo "no tfstate file"
+  #mkdir -p terraform-state/
+  #[  -z “$(ls -A  terraform-state/)” ] && mv terraform-state/* create-infrastructure-output/ || echo "no tfstate file"
 
   local opsman_image_name="ops-manager-$(get_opsman_version)"
   local opsman_fixed_ip=$(echo $INFRA_SUBNET_CIDR|cut -d. -f 1,2,3).5
