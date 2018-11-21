@@ -5,7 +5,7 @@ provider "openstack" {
   auth_url    = "${var.os_auth_url}"
   domain_name = "${var.os_domain_name}"
 }
-provider “powerdns” {
- api_key    = “changeme”
- server_url = “http://192.168.103.16:8081”
+provider "powerdns" {
+ api_key    = "changeme"
+ server_url = "http://192.168.103.16:8081"
 }
