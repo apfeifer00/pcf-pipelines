@@ -101,10 +101,10 @@ resource "openstack_networking_floatingip_v2" "haproxy_floating_ip" {
   pool = "${var.external_network}"
 }
 
-resource “powerdns_record” “haproxy” {
- zone    = “evoila.os.”
- name    = “haproxy.evoila.os.”
- type    = “A”
+resource "powerdns_record" "haproxy" {
+ zone    = "evoila.os."
+ name    = "haproxy.evoila.os."
+ type    = "A"
  ttl     = 60
- records = [“${openstack_networking_floatingip_v2.haproxy_floating_ip.address}“]
+ records = ["${openstack_networking_floatingip_v2.haproxy_floating_ip.address}"]
 }
