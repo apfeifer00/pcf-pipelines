@@ -38,10 +38,10 @@ resource "openstack_compute_volume_attach_v2" "opsman_volume_attachment" {
   volume_id   = "${openstack_blockstorage_volume_v2.opsman_volume.id}"
 }
 
-resource “powerdns_record” “ops” {
- zone    = “evoila.os.”
- name    = “ompipe.evoila.os.”
- type    = “A”
+resource "powerdns_record" "ops" {
+ zone    = "evoila.os."
+ name    = "ompipe.evoila.os."
+ type    = "A"
  ttl     = 60
- records = [“${openstack_networking_floatingip_v2.opsman_floating_ip.address}“]
+ records = ["${openstack_networking_floatingip_v2.opsman_floating_ip.address}"]
 }
