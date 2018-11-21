@@ -7,5 +7,5 @@ provider "openstack" {
 }
 provider “powerdns” {
  api_key    = “changeme”
- server_url = “http://dns.evoila.os:8081”
+ server_url = “http://192.168.103.16:8081”
 }
